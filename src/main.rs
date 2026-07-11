@@ -1,3 +1,21 @@
-fn main() {
-    println!("Hello, world!");
+mod app;
+mod gui;
+
+
+fn main() -> eframe::Result<()> {
+
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([800.0, 600.0]),
+        ..Default::default()
+    };
+
+
+    eframe::run_native(
+        "PhaseLock",
+        options,
+        Box::new(|cc| {
+            Ok(Box::new(app::PhaseLockApp::new(cc)))
+        }),
+    )
 }
