@@ -1,3 +1,5 @@
+// Hash key generation module.
+
 use std::{
     fs::File,
     io::{self, Read},
