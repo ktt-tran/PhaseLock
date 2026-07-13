@@ -103,12 +103,14 @@ impl eframe::App for PhaseLockApp {
                 Page::Encrypt =>
                     encrypt::show(
                         &mut self.encrypt_state,
+                        &mut self.status_message,
                         ui
                     ),
 
                 Page::Unlock =>
                     unlock::show(
                         &mut self.decrypt_state,
+                        &mut self.status_message,
                         ui
                     ),
 

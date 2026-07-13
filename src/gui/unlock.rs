@@ -20,6 +20,7 @@ pub struct DecryptState {
 
 pub fn show(
     state: &mut DecryptState,
+    status_message: &mut String,
     ui: &mut Ui
 ) {
 
@@ -107,7 +108,8 @@ pub fn show(
         if (state.selected_lock != None && state.selected_audio != None) || (state.selected_lock != None && !state.password.trim().is_empty()) {
             state.confirm_action = true;
         } else {
-            println!("Please select a file to unlock and an audio key or a password.");
+            *status_message = "Please select both a file and an audio key.".to_string();
+            println!("Please select both a file and an audio key.");
         }
     }
 
@@ -152,8 +154,9 @@ pub fn show(
 
                 }
 
+                
                 if ui.button("Unlock").clicked() && state.output_directory != None {
-
+                    *status_message = "Unlocking...".to_string();
                     println!("Unlocking...");
                     
                     // Unlock file using the input audio key.
@@ -173,8 +176,13 @@ pub fn show(
 
                         match result_audio {
                             Ok(()) => {
+                                *status_message = format!(
+                                    "Unlock Successful: {}",
+                                    output_directory.display()
+                                );
+
                                 println!(
-                                    "Unlock successful: {}",
+                                    "Unlock Successful: {}",
                                     output_directory.display()
                                 );
 
@@ -195,8 +203,13 @@ pub fn show(
 
                                 match result_password {
                                     Ok(()) => {
+                                        *status_message = format!(
+                                            "Unlock Successful: {}",
+                                            output_directory.display()
+                                        );
+
                                         println!(
-                                            "Unlock successful: {}",
+                                            "Unlock Successful: {}",
                                             output_directory.display()
                                         );
 
@@ -208,7 +221,8 @@ pub fn show(
                                     }
 
                                     Err(error) => {
-                                        println!("Unlock failed: {error}");
+                                        *status_message = format!("Unlock Failed: {error}");
+                                        println!("Unlock Failed: {error}");
                                     }
                                 }
                             }
@@ -229,8 +243,13 @@ pub fn show(
 
                         match result_password {
                             Ok(()) => {
+                                *status_message = format!(
+                                    "   Unlock Successful: {}",
+                                    output_directory.display()
+                                );
+
                                 println!(
-                                    "Unlock successful: {}",
+                                    "Unlock Successful: {}",
                                     output_directory.display()
                                 );
 
@@ -242,7 +261,8 @@ pub fn show(
                             }
 
                             Err(error) => {
-                                println!("Unlock failed: {error}");
+                                *status_message = format!("Unlock Failed: {error}");
+                                println!("Unlock Failed: {error}");
                             }
                         }
 

@@ -14,13 +14,15 @@ pub struct EncryptState {
     pub use_password: bool,
     pub show_password: bool,
     pub delete_original: bool,
-    pub confirm_action: bool
+    pub confirm_action: bool,
+    pub start_encrypting: bool,
 
 }
 
 
 pub fn show(
     state: &mut EncryptState,
+    status_message: &mut String,
     ui: &mut Ui
 ){
 
@@ -109,6 +111,7 @@ pub fn show(
 
     if ui.button("🔒 Encrypt").clicked(){
         if state.selected_file == None || state.selected_audio == None {
+            *status_message = "Please select both a file and an audio key.".to_string();
             println!("Please select both a file and an audio key.");
         } else {
             state.confirm_action = true;
@@ -156,10 +159,11 @@ pub fn show(
 
                 }
 
+                // Update status bar to indicate the encryption is in progress.
                 if ui.button("Encrypt").clicked() && state.output_directory != None {
-
+                    *status_message = "Encrypting...".to_string();
                     println!("Encrypting...");
-                    
+  
                     let (Some(input_path), Some(audio_path), Some(output_directory)) = (&state.selected_file, &state.selected_audio, &state.output_directory) else { println!("Missing file detected; Second check."); return () };
                     
                     let output_directory = output_directory.join(
@@ -182,19 +186,26 @@ pub fn show(
 
                     match result {
                         Ok(()) => {
+                            *status_message = format!(
+                                "Encryption Successful: {}",
+                                output_directory.display()
+                            );
+
                             println!(
-                                "Encryption successful: {}",
+                                "Encryption Successful: {}",
                                 output_directory.display()
                             );
 
                             if state.delete_original {
                                 match std::fs::remove_file(input_path) {
                                     Ok(()) => {
-                                        println!("Original file was deleted");
+                                        *status_message = "Encryption Successful, Original File was Deleted".to_string();
+                                        println!("Encryption Successful, Original File was Deleted");
                                     }
 
                                     Err(error) => {
-                                        println!("Encryption was successful, but failed to delete original file: {error}");
+                                        *status_message = format!("Encryption Successful, Original File was Not Deleted: {error}");
+                                        println!("Encryption Successful, Original File was Not Deleted: {error}");
                                     }
                                 }
                             }
@@ -207,11 +218,10 @@ pub fn show(
                         }
 
                         Err(error) => {
-                            println!("Encryption failed: {error}");
+                            *status_message = format!("Encryption Failed: {error}");
+                            println!("Encryption Failed: {error}");
                         }
                     }
-                    
-                    state.confirm_action = false;
                 }
             });
         });
