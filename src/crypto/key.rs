@@ -5,7 +5,7 @@ pub const KEY_SIZE: usize = 32;
 
 #[derive(Zeroize, ZeroizeOnDrop)]
 pub struct FileKey {
-    bytes: [u8; KEY_SIZE],
+    bytes: [u8; KEY_SIZE]
 }
 
 impl FileKey {

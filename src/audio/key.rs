@@ -15,7 +15,7 @@ pub const AUDIO_KEY_SIZE: usize = 32;
 #[derive(Zeroize, ZeroizeOnDrop)]
 // Key struct that 32 bytes in length.
 pub struct AudioKey {
-    bytes: [u8; AUDIO_KEY_SIZE],
+    bytes: [u8; AUDIO_KEY_SIZE]
 }
 
 impl AudioKey {
@@ -37,7 +37,7 @@ pub fn derive_audio_key<P: AsRef<Path>>(
 
     let mut buffer = [0u8; 8192];
 
-    // Loops through the file and reading the entire file by chunck-by-chunck to the end.
+    // Loops through the file and reading the entire file chunck-by-chunck to the end.
     // Each loop reads 8192 bits chunck and updates the hash state which will be the hash
     // key generated.
     loop {

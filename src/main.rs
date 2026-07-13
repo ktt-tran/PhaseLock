@@ -1,5 +1,8 @@
 mod app;
 mod gui;
+mod audio;
+mod crypto;
+mod file;
 
 
 fn main() -> eframe::Result<()> {
