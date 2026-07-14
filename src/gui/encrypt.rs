@@ -15,7 +15,6 @@ pub struct EncryptState {
     pub show_password: bool,
     pub delete_original: bool,
     pub confirm_action: bool,
-    pub start_encrypting: bool,
 
 }
 

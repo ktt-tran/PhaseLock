@@ -1,6 +1,19 @@
 use crate::crypto::encrypt::EncryptedData;
 
-// File signature to recognize a PhaseLock .lock file.
+// File signature to recognize a PhaseLock .lock file:
+// +----------------+
+// | MAGIC          |
+// +----------------+
+// | VERSION        |
+// +----------------+
+// | filename       |
+// +----------------+
+// | payload        |
+// +----------------+
+// | audio key      |
+// +----------------+
+// | password data  | optional
+// +----------------+
 pub const MAGIC: &[u8; 8] = b"PHASELCK";
 pub const FORMAT_VERSION: u8 = 1;
 

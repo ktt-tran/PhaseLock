@@ -5,7 +5,7 @@ use std::{
 };
 
 use chacha20poly1305::{
-    aead::{Aead, AeadCore, Generate, Key, KeyInit},
+    aead::{Aead, Generate, KeyInit},
     XChaCha20Poly1305,
     XNonce,
 };

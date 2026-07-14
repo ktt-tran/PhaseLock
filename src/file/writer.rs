@@ -10,20 +10,7 @@ use crate::file::format::{
     MAGIC,
 };
 
-// Write metadata into .lock file used later to read and recognize encrypted file(s):
-// +----------------+
-// | MAGIC          |
-// +----------------+
-// | VERSION        |
-// +----------------+
-// | filename       |
-// +----------------+
-// | payload        |
-// +----------------+
-// | audio key      |
-// +----------------+
-// | password data  | optional
-// +----------------+
+// Write metadata into .lock file used later to read and recognize encrypted file(s).
 pub fn write_lock_file<P: AsRef<Path>>(
     path: P,
     lock_file: &LockFile,
