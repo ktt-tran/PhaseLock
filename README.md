@@ -60,4 +60,3 @@ Current areas of exploration:
 This project is an experimental exploration of combining digital signal processing with cryptographic systems.
 
 It does not replace established key management methods and should not be considered a complete security solution without further testing and evaluation.
-
