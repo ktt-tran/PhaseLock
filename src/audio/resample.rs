@@ -1,17 +1,17 @@
 use crate::audio::decode::DecodedAudio;
 
-pub const TARGET_SAMPLE_RATE: u32 = 16000;
+pub const SAMPLING_RATE: u32 = 1u32 << 14;
 
 pub fn resample_audio(audio: &DecodedAudio) -> Vec<f32> {
-    let signal = audio.get_signal();
+    let signal = &audio.signal;
     let original_rate = audio.sample_rate;
 
     // No resampling needed.
-    if original_rate == TARGET_SAMPLE_RATE {
+    if original_rate == SAMPLING_RATE {
         return signal.to_vec();
     }
 
-    let ratio = TARGET_SAMPLE_RATE as f64 / original_rate as f64;
+    let ratio = SAMPLING_RATE as f64 / original_rate as f64;
 
     let new_length = (signal.len() as f64 * ratio).round() as usize;
 
@@ -24,7 +24,7 @@ pub fn resample_audio(audio: &DecodedAudio) -> Vec<f32> {
         let left_index = original_position.floor() as usize;
         let right_index = left_index + 1;
 
-        // Stop if we reach the end.
+        // Stop if at the end.
         if right_index >= signal.len() {
             resampled.push(signal[left_index]);
             continue;

@@ -18,14 +18,8 @@ use symphonia::{
 #[derive(Zeroize, ZeroizeOnDrop)]
 
 pub struct DecodedAudio {
-    signal: Vec<f32>,
+    pub signal: Vec<f32>,
     pub sample_rate: u32,
-}
-
-impl DecodedAudio {
-    pub fn get_signal(&self) -> &[f32] {
-        &self.signal
-    }
 }
 
 pub fn decode_audio_key<P: AsRef<Path>>(
