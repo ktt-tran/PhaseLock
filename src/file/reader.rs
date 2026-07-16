@@ -40,23 +40,11 @@ pub fn read_lock_file<P: AsRef<Path>>(
     let version = read_u8(&mut file)?;
 
     if version != 1 {
-    return Err(io::Error::new(
-        io::ErrorKind::InvalidData,
-        format!("unsupported PhaseLock version: {}",version)
-    ));
-}
-
-    // PROCEED: Read original filename
-    let fname_bytes = read_bytes(&mut file)?;
-
-    let original_filename =
-        String::from_utf8(fname_bytes)
-            .map_err(|_| {
-                io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "invalid filename encoding",
-                )
-            })?;
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("unsupported PhaseLock version: {}",version)
+        ));
+    }
 
     // Read audio-wrapped FileKey
     let audio_wrapped_key = read_wrapped_key(&mut file)?;
@@ -101,7 +89,6 @@ pub fn read_lock_file<P: AsRef<Path>>(
 
     Ok(LockFile {
         version,
-        original_filename,
         payload,
         audio_wrapped_key,
         password_data,

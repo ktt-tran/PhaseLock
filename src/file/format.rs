@@ -1,6 +1,17 @@
 use crate::crypto::encrypt::EncryptedData;
 
-// File signature to recognize a PhaseLock .lock file.
+/* File signature to recognize a PhaseLock .lock file:
+   +----------------+
+   | MAGIC          |
+   +----------------+
+   | VERSION        |
+   +----------------+
+   | payload        |
+   +----------------+
+   | audio key      |
+   +----------------+
+   | password data  | optional
+   +----------------+ */
 pub const MAGIC: &[u8; 8] = b"PHASELCK";
 pub const FORMAT_VERSION: u8 = 1;
 
@@ -16,9 +27,6 @@ pub struct PasswordKeyData {
 
 pub struct LockFile {
     pub version: u8,
-
-    // File information
-    pub original_filename: String,
 
     // FileKey encrypted with the AudioKey
     pub audio_wrapped_key: WrappedKey,

@@ -1,5 +1,4 @@
 use std::{
-    fs,
     io,
     path::Path,
 };
@@ -13,6 +12,7 @@ use chacha20poly1305::{
 use crate::{
     audio::key::derive_audio_key,
     crypto::{
+        archive,
         key::{
             FileKey,
             KEY_SIZE,
@@ -71,10 +71,10 @@ fn wrapped_key_to_encrypted_data(
     }
 }
 
-pub fn decrypt_file_with_audio<L: AsRef<Path>, A: AsRef<Path>, O: AsRef<Path>>(
+pub fn decrypt_with_audio<L: AsRef<Path>, A: AsRef<Path>, O: AsRef<Path>>(
     lock_path: L,
     audio_path: A,
-    output_path: O,
+    output_directory: O,
 ) -> io::Result<()> {
 
     // Read and parse the .lock file.
@@ -102,8 +102,12 @@ pub fn decrypt_file_with_audio<L: AsRef<Path>, A: AsRef<Path>, O: AsRef<Path>>(
             )
         })?;
 
+    println!("Reading .lock...");
+    println!("Unwrapping key...");
+    println!("Decrypting payload...");
+
     // Decrypt the actual file contents
-    let plaintext =
+    let decrypted =
         decrypt_bytes(
             &lock_file.payload,
             file_key.as_bytes(),
@@ -111,23 +115,26 @@ pub fn decrypt_file_with_audio<L: AsRef<Path>, A: AsRef<Path>, O: AsRef<Path>>(
         .map_err(|_| {
             io::Error::new(
                 io::ErrorKind::InvalidData,
-                "failed to decrypt file",
+                "failed to decrypt archive",
             )
         })?;
 
-    // Save the restored file
-    fs::write(
-        output_path,
-        plaintext,
+    println!("Payload decrypted.");
+    println!("Archive size: {}", decrypted.len());
+    
+    // Restore archive of files/folders.
+    archive::extract_archive(
+        &decrypted,
+        output_directory.as_ref()
     )?;
 
     Ok(())
 }
 
-pub fn decrypt_file_with_password<L: AsRef<Path>, O: AsRef<Path>>(
+pub fn decrypt_with_password<L: AsRef<Path>, O: AsRef<Path>>(
     lock_path: L,
     password: &str,
-    output_path: O,
+    output_directory: O,
 ) -> io::Result<()> {
 
     // Read the .lock file
@@ -174,7 +181,7 @@ pub fn decrypt_file_with_password<L: AsRef<Path>, O: AsRef<Path>>(
         })?;
 
     // Decrypt the actual file.
-    let plaintext =
+    let decrypted =
         decrypt_bytes(
             &lock_file.payload,
             file_key.as_bytes(),
@@ -182,15 +189,15 @@ pub fn decrypt_file_with_password<L: AsRef<Path>, O: AsRef<Path>>(
         .map_err(|_| {
             io::Error::new(
                 io::ErrorKind::InvalidData,
-                "failed to decrypt file",
+                "failed to decrypt archive",
             )
         })?;
 
-    // Save restored file
-    fs::write(
-        output_path,
-        plaintext,
-    )?;
+        // Restore archive of files/folders.
+        archive::extract_archive(
+            &decrypted,
+            output_directory.as_ref()
+        )?;
 
     Ok(())
 }
@@ -345,7 +352,7 @@ mod tests {
         )
         .unwrap();
 
-        decrypt_file_with_audio(
+        decrypt_with_audio(
             lock,
             audio,
             restored,
@@ -401,7 +408,7 @@ mod tests {
         .unwrap();
 
         let result =
-            decrypt_file_with_audio(
+            decrypt_with_audio(
                 lock,
                 wrong_audio,
                 output,
@@ -449,7 +456,7 @@ mod tests {
         )
         .unwrap();
 
-        decrypt_file_with_password(
+        decrypt_with_password(
             lock,
             "correct-password",
             restored,
@@ -498,7 +505,7 @@ mod tests {
         .unwrap();
 
         let result =
-            decrypt_file_with_password(
+            decrypt_with_password(
                 lock,
                 "wrong-password",
                 output,

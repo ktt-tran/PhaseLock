@@ -22,7 +22,7 @@ pub fn show(
 
     ui.separator();
 
-    // Select lock file
+    // Select .lock file
     ui.label("Encrypted File:");
 
     if ui.button("Select .lock File").clicked() {

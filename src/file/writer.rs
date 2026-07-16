@@ -10,20 +10,7 @@ use crate::file::format::{
     MAGIC,
 };
 
-// Write metadata into .lock file used later to read and recognize encrypted file(s):
-// +----------------+
-// | MAGIC          |
-// +----------------+
-// | VERSION        |
-// +----------------+
-// | filename       |
-// +----------------+
-// | payload        |
-// +----------------+
-// | audio key      |
-// +----------------+
-// | password data  | optional
-// +----------------+
+// Write metadata into .lock file used later to read and recognize encrypted file(s).
 pub fn write_lock_file<P: AsRef<Path>>(
     path: P,
     lock_file: &LockFile,
@@ -36,12 +23,6 @@ pub fn write_lock_file<P: AsRef<Path>>(
 
     // Write PhaseLock format version
     file.write_all(&[lock_file.version])?;
-
-    // Original filename
-    write_bytes(
-        &mut file,
-        lock_file.original_filename.as_bytes(),
-    )?;
 
     // Audio-wrapped FileKey
     write_wrapped_key(

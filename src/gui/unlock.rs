@@ -1,9 +1,8 @@
 use std::path::PathBuf;
 use egui::Ui;
 use rfd::FileDialog;
-use crate::crypto::decrypt::decrypt_file_with_audio;
-use crate::crypto::decrypt::decrypt_file_with_password;
-use crate::file::reader::read_lock_file;
+use crate::crypto::decrypt::decrypt_with_audio;
+use crate::crypto::decrypt::decrypt_with_password;
 
 #[derive(Default)]
 pub struct DecryptState {
@@ -160,30 +159,30 @@ pub fn show(
                     println!("Unlocking...");
                     
                     // Unlock file using the input audio key.
-                    if let (Some(lock_file), Some(audio_path), Some(output_directory)) = (&state.selected_lock, &state.selected_audio, &state.output_directory) {
-                        
-                        let lock_data = read_lock_file(lock_file);
+                    if let (Some(lock_file), Some(audio_path), Some(_output_directory)) = (&state.selected_lock, &state.selected_audio, &state.output_directory) {
 
-                        let output_directory = output_directory.join(
-                            &lock_data.unwrap().original_filename
-                        );
+                        let mut output_path = _output_directory.clone();
 
-                        let result_audio = decrypt_file_with_audio(
+                        if let Some(lock_name) = lock_file.file_stem().and_then(|s| s.to_str()) {
+                            output_path = output_path.join(lock_name);
+                        }
+
+                        let result_audio = decrypt_with_audio(
                             lock_file,
                             audio_path,
-                            &output_directory,
+                            &output_path,
                         );
 
                         match result_audio {
                             Ok(()) => {
                                 *status_message = format!(
                                     "Unlock Successful: {}",
-                                    output_directory.display()
+                                    output_path.display()
                                 );
 
                                 println!(
                                     "Unlock Successful: {}",
-                                    output_directory.display()
+                                    output_path.display()
                                 );
 
                                 state.password.clear();
@@ -195,22 +194,22 @@ pub fn show(
 
                             _ => if !state.password.trim().is_empty() {
                                 
-                                let result_password = decrypt_file_with_password(
+                                let result_password = decrypt_with_password(
                                     lock_file,
                                     state.password.trim(),
-                                    &output_directory,
+                                    &output_path,
                                 );
 
                                 match result_password {
                                     Ok(()) => {
                                         *status_message = format!(
                                             "Unlock Successful: {}",
-                                            output_directory.display()
+                                            output_path.display()
                                         );
 
                                         println!(
                                             "Unlock Successful: {}",
-                                            output_directory.display()
+                                            output_path.display()
                                         );
 
                                         state.password.clear();
@@ -227,30 +226,30 @@ pub fn show(
                                 }
                             }
                         }
-                    } else if let (Some(lock_file), Some(output_directory)) = (&state.selected_lock, &state.output_directory) && !state.password.trim().is_empty() {
+                    } else if let (Some(lock_file), Some(_output_directory)) = (&state.selected_lock, &state.output_directory) && !state.password.trim().is_empty() {
 
-                        let lock_data = read_lock_file(lock_file);
+                        let mut output_path = _output_directory.clone();
 
-                        let output_directory = output_directory.join(
-                            &lock_data.unwrap().original_filename
-                        );
+                        if let Some(lock_name) = lock_file.file_stem().and_then(|s| s.to_str()) {
+                            output_path = output_path.join(lock_name);
+                        }
 
-                        let result_password = decrypt_file_with_password(
+                        let result_password = decrypt_with_password(
                             lock_file,
                             state.password.trim(),
-                            &output_directory,
+                            &output_path,
                         );
 
                         match result_password {
                             Ok(()) => {
                                 *status_message = format!(
                                     "   Unlock Successful: {}",
-                                    output_directory.display()
+                                    output_path.display()
                                 );
 
                                 println!(
                                     "Unlock Successful: {}",
-                                    output_directory.display()
+                                    output_path.display()
                                 );
 
                                 state.password.clear();

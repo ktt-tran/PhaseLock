@@ -10,7 +10,7 @@ The current implementation uses modern authenticated encryption (AEAD) to secure
 
 PhaseLock converts an audio file into cryptographic key material and uses that key with an AEAD encryption algorithm to encrypt files.
 
-The contents audio file itself is not used to encrypt the data directly. Instead, it is processed as binary data and used to create the encryption key.
+Audio data itself is not used to encrypt the data directly. Instead, the audio file is processed as byte code and used to create the encryption key.
 
 Because PhaseLock reads files as bytes, technically any file type can be used as a key source. However, audio files are the intended use case because they provide a unique and personal way for users to create their keys.
 

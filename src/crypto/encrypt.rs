@@ -1,11 +1,10 @@
 use std::{
-    fs,
     io,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use chacha20poly1305::{
-    aead::{Aead, AeadCore, Generate, Key, KeyInit},
+    aead::{Aead, Generate, KeyInit},
     XChaCha20Poly1305,
     XNonce,
 };
@@ -13,6 +12,7 @@ use chacha20poly1305::{
 use crate::{
     audio::key::derive_audio_key,
     crypto::{
+        archive,
         key::FileKey,
         password::{
             derive_password_key,
@@ -61,7 +61,7 @@ pub fn encrypt_bytes(
 }
 
 // File key wrapping protects plain key being seen in metadata.
-// The origin file will be encrypted and an audio file (and option
+// The origin data will be encrypted with an audio file (and option
 // password) is used as the wrapping key.
 pub fn wrap_file_key(
     file_key: &FileKey,
@@ -74,32 +74,24 @@ pub fn wrap_file_key(
     )
 }
 
-pub fn encrypt_file<P: AsRef<Path>, A: AsRef<Path>, O: AsRef<Path>>(
-    input_path: P,
+pub fn encrypt_with_key<A: AsRef<Path>, O: AsRef<Path>>(
+    input_data: &[PathBuf],
     audio_path: A,
     output_path: O,
     password: Option<&str>,
 ) -> io::Result<()> {
 
-    let file_data = fs::read(input_path.as_ref())?;
-
-    // Preserve original filename.
-    let original_filename = match input_path.as_ref().file_name() {
-        Some(fname) => fname.to_string_lossy().into_owned(),
-        None => {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "Inpute file has no filename",
-            ));
-        }
-    };
-
     // Generate random key for file.
     let file_key = FileKey::generate();
 
-    // Encrypt the actual file.
+    // Create archive for selected files/folders.
+    println!("Creating archive...");
+    let archive_data = archive::create_archive(input_data)?;
+    println!("Archive created.");
+
+    // Encrypt the archive of files/folders with the file_key byte code.
     let payload = encrypt_bytes(
-        &file_data,
+        &archive_data,
         file_key.as_bytes(),
     )
     // Convert chacha20poly1305::Error into io:Error if file
@@ -112,7 +104,9 @@ pub fn encrypt_file<P: AsRef<Path>, A: AsRef<Path>, O: AsRef<Path>>(
     })?;
 
     // Derive key from exact audio file.
+    println!("Deriving audio key...");
     let audio_key = derive_audio_key(audio_path)?;
+    println!("Audio key derived.");
 
     // Encrypt/wrap the FileKey using AudioKey.
     let audio_wrapped_key = WrappedKey::from(
@@ -172,17 +166,15 @@ pub fn encrypt_file<P: AsRef<Path>, A: AsRef<Path>, O: AsRef<Path>>(
     // Build the complete PhaseLock structure.
     let lock_file = LockFile {
         version: FORMAT_VERSION,
-        original_filename,
         audio_wrapped_key,
         password_data,
         payload
     };
 
     // Write the final .lock file.
-    write_lock_file(
-        output_path,
-        &lock_file,
-    )?;
+    println!("Writing lock file...");
+    write_lock_file(output_path, &lock_file)?;
+    println!("Lock file written.");
 
     Ok(())
 }
@@ -246,7 +238,7 @@ mod tests {
         )
         .unwrap();
 
-        encrypt_file(
+        encrypt_with_key(
             input,
             audio,
             output,
