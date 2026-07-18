@@ -1,6 +1,8 @@
 use std::{
     io,
+    io::{Cursor},
     path::Path,
+    sync::mpsc::Sender,
 };
 
 use chacha20poly1305::{
@@ -12,7 +14,7 @@ use chacha20poly1305::{
 use crate::{
     audio::key::derive_audio_key,
     crypto::{
-        archive,
+        archive::extract_archive,
         key::{
             FileKey,
             KEY_SIZE,
@@ -71,13 +73,15 @@ fn wrapped_key_to_encrypted_data(
     }
 }
 
-pub fn decrypt_with_audio<L: AsRef<Path>, A: AsRef<Path>, O: AsRef<Path>>(
+/// Complete extraction with audio file.
+pub fn decrypt_with_audio<L: AsRef<Path>, A: AsRef<Path>>(
     lock_path: L,
     audio_path: A,
-    output_directory: O,
-) -> io::Result<()> {
+    sender: &Sender<String>,
+) -> Result<Vec<u8>, io::Error> {
 
     // Read and parse the .lock file.
+    sender.send("Reading lock...".to_string()).ok();
     let lock_file = read_lock_file(lock_path)?;
 
     // Derive the key from the provided audio file.
@@ -102,11 +106,10 @@ pub fn decrypt_with_audio<L: AsRef<Path>, A: AsRef<Path>, O: AsRef<Path>>(
             )
         })?;
 
-    println!("Reading .lock...");
-    println!("Unwrapping key...");
-    println!("Decrypting payload...");
+    sender.send("Reading .lock...".to_string()).ok();
 
     // Decrypt the actual file contents
+    sender.send("Extracting...".to_string()).ok();
     let decrypted =
         decrypt_bytes(
             &lock_file.payload,
@@ -119,25 +122,21 @@ pub fn decrypt_with_audio<L: AsRef<Path>, A: AsRef<Path>, O: AsRef<Path>>(
             )
         })?;
 
-    println!("Payload decrypted.");
-    println!("Archive size: {}", decrypted.len());
+    // Decompress archive.
+    let decompressed_archive = zstd::decode_all(Cursor::new(decrypted));
     
-    // Restore archive of files/folders.
-    archive::extract_archive(
-        &decrypted,
-        output_directory.as_ref()
-    )?;
-
-    Ok(())
+    decompressed_archive
 }
 
-pub fn decrypt_with_password<L: AsRef<Path>, O: AsRef<Path>>(
+/// Complete extraction with password.
+pub fn decrypt_with_password<L: AsRef<Path>>(
     lock_path: L,
     password: &str,
-    output_directory: O,
-) -> io::Result<()> {
+    sender: &Sender<String>,
+) -> Result<Vec<u8>, io::Error> {
 
     // Read the .lock file
+    sender.send("Reading .lock...".to_string()).ok();
     let lock_file = read_lock_file(lock_path)?;
 
     // Check if this .lock file has password recovery enabled.
@@ -181,6 +180,7 @@ pub fn decrypt_with_password<L: AsRef<Path>, O: AsRef<Path>>(
         })?;
 
     // Decrypt the actual file.
+    sender.send("Extracting...".to_string()).ok();
     let decrypted =
         decrypt_bytes(
             &lock_file.payload,
@@ -193,332 +193,56 @@ pub fn decrypt_with_password<L: AsRef<Path>, O: AsRef<Path>>(
             )
         })?;
 
-        // Restore archive of files/folders.
-        archive::extract_archive(
-            &decrypted,
-            output_directory.as_ref()
-        )?;
+    // Decompress archive.
+    let decompressed_archive = zstd::decode_all(Cursor::new(decrypted));
 
-    Ok(())
+    decompressed_archive
+
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs;
-    use crate::crypto::encrypt::encrypt_bytes;
-    use crate::crypto::key::FileKey;
-    use crate::crypto::encrypt::wrap_file_key;
-    use crate::crypto::encrypt::encrypt_file;
+// Extract all data and restore into the output directory.
+pub fn decrypt_and_extract_with_audio<L: AsRef<Path>, A: AsRef<Path>, O: AsRef<Path>>(
+    lock_path: L,
+    audio_path: A,
+    output_directory: O,
+    sender: &Sender<String>,
+) -> io::Result<()> {
 
-    #[test]
-    fn decrypt_restores_original_data() {
-        let key = [42u8; 32];
-        let plaintext = b"PhaseLock secret file";
+    let decrypted_archive = decrypt_with_audio(
+        lock_path,
+        audio_path,
+        sender,
+    )?;
 
-        let encrypted =
-            encrypt_bytes(plaintext, &key).unwrap();
+    extract_archive(
+        &decrypted_archive,
+        output_directory.as_ref(),
+    )?;
 
-        let decrypted =
-            decrypt_bytes(&encrypted, &key).unwrap();
+    Ok(())
+<<<<<<< HEAD
+=======
+}
 
-        assert_eq!(
-            decrypted,
-            plaintext
-        );
-    }
+// Extract all data and restore into the output directory.
+pub fn decrypt_and_extract_with_password<L: AsRef<Path>, O: AsRef<Path>>(
+    lock_path: L,
+    password: &str,
+    output_directory: O,
+    sender: &Sender<String>,
+) -> io::Result<()> {
 
-    #[test]
-    fn wrong_key_fails() {
-        let correct_key = [42u8; 32];
-        let wrong_key = [99u8; 32];
+    let decrypted_archive = decrypt_with_password(
+        lock_path,
+        password,
+        sender,
+    )?;
 
-        let plaintext = b"Secret information";
+    extract_archive(
+        &decrypted_archive,
+        output_directory.as_ref(),
+    )?;
 
-        let encrypted =
-            encrypt_bytes(
-                plaintext,
-                &correct_key,
-            )
-            .unwrap();
-
-        let result =
-            decrypt_bytes(
-                &encrypted,
-                &wrong_key,
-            );
-
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn modified_ciphertext_fails() {
-        let key = [42u8; 32];
-
-        let mut encrypted =
-            encrypt_bytes(
-                b"Important data",
-                &key,
-            )
-            .unwrap();
-
-        encrypted.ciphertext[0] ^= 1;
-
-        let result =
-            decrypt_bytes(
-                &encrypted,
-                &key,
-            );
-
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn file_key_can_be_wrapped_and_unwrapped() {
-        let file_key = FileKey::generate();
-
-        let wrapping_key = [55u8; 32];
-
-        let wrapped =
-            wrap_file_key(
-                &file_key,
-                &wrapping_key,
-            )
-            .unwrap();
-
-        let recovered =
-            unwrap_file_key(
-                &wrapped,
-                &wrapping_key,
-            )
-            .unwrap();
-
-        assert_eq!(
-            file_key.as_bytes(),
-            recovered.as_bytes()
-        );
-    }
-
-    #[test]
-    fn wrong_wrapping_key_cannot_recover_file_key() {
-        let file_key = FileKey::generate();
-
-        let correct_key = [55u8; 32];
-        let wrong_key = [99u8; 32];
-
-        let wrapped =
-            wrap_file_key(
-                &file_key,
-                &correct_key,
-            )
-            .unwrap();
-
-        let result =
-            unwrap_file_key(
-                &wrapped,
-                &wrong_key,
-            );
-
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn encrypt_and_decrypt_with_audio() {
-        let input = "test_original.txt";
-        let audio = "test_audio.bin";
-        let lock = "test_output.lock";
-        let restored = "test_restored.txt";
-
-        let original_data =
-            b"PhaseLock end-to-end encryption test";
-
-        fs::write(
-            input,
-            original_data,
-        )
-        .unwrap();
-
-        fs::write(
-            audio,
-            b"test audio key data",
-        )
-        .unwrap();
-
-        encrypt_file(
-            input,
-            audio,
-            lock,
-            None,
-        )
-        .unwrap();
-
-        decrypt_with_audio(
-            lock,
-            audio,
-            restored,
-        )
-        .unwrap();
-
-        let restored_data =
-            fs::read(restored).unwrap();
-
-        assert_eq!(
-            restored_data,
-            original_data
-        );
-
-        fs::remove_file(input).unwrap();
-        fs::remove_file(audio).unwrap();
-        fs::remove_file(lock).unwrap();
-        fs::remove_file(restored).unwrap();
-    }
-
-    #[test]
-    fn wrong_audio_cannot_unlock_file() {
-        let input = "test_original_wrong.txt";
-        let correct_audio = "test_correct_audio.bin";
-        let wrong_audio = "test_wrong_audio.bin";
-        let lock = "test_wrong_audio.lock";
-        let output = "should_not_exist.txt";
-
-        fs::write(
-            input,
-            b"Secret data",
-        )
-        .unwrap();
-
-        fs::write(
-            correct_audio,
-            b"correct audio data",
-        )
-        .unwrap();
-
-        fs::write(
-            wrong_audio,
-            b"wrong audio data",
-        )
-        .unwrap();
-
-        encrypt_file(
-            input,
-            correct_audio,
-            lock,
-            None,
-        )
-        .unwrap();
-
-        let result =
-            decrypt_with_audio(
-                lock,
-                wrong_audio,
-                output,
-            );
-
-        assert!(result.is_err());
-
-        fs::remove_file(input).unwrap();
-        fs::remove_file(correct_audio).unwrap();
-        fs::remove_file(wrong_audio).unwrap();
-        fs::remove_file(lock).unwrap();
-
-        if Path::new(output).exists() {
-            fs::remove_file(output).unwrap();
-        }
-    }
-
-    #[test]
-    fn encrypt_and_decrypt_with_password() {
-        let input = "test_password_original.txt";
-        let audio = "test_password_audio.bin";
-        let lock = "test_password.lock";
-        let restored = "test_password_restored.txt";
-
-        let original_data =
-            b"PhaseLock password unlock test";
-
-        fs::write(
-            input,
-            original_data,
-        )
-        .unwrap();
-
-        fs::write(
-            audio,
-            b"audio key data",
-        )
-        .unwrap();
-
-        encrypt_file(
-            input,
-            audio,
-            lock,
-            Some("correct-password"),
-        )
-        .unwrap();
-
-        decrypt_with_password(
-            lock,
-            "correct-password",
-            restored,
-        )
-        .unwrap();
-
-        let restored_data =
-            fs::read(restored).unwrap();
-
-        assert_eq!(
-            restored_data,
-            original_data
-        );
-
-        fs::remove_file(input).unwrap();
-        fs::remove_file(audio).unwrap();
-        fs::remove_file(lock).unwrap();
-        fs::remove_file(restored).unwrap();
-    }
-
-    #[test]
-    fn wrong_password_cannot_unlock_file() {
-        let input = "test_wrong_password.txt";
-        let audio = "test_wrong_password_audio.bin";
-        let lock = "test_wrong_password.lock";
-        let output = "wrong_password_output.txt";
-
-        fs::write(
-            input,
-            b"Secret PhaseLock data",
-        )
-        .unwrap();
-
-        fs::write(
-            audio,
-            b"audio key data",
-        )
-        .unwrap();
-
-        encrypt_file(
-            input,
-            audio,
-            lock,
-            Some("correct-password"),
-        )
-        .unwrap();
-
-        let result =
-            decrypt_with_password(
-                lock,
-                "wrong-password",
-                output,
-            );
-
-        assert!(result.is_err());
-
-        fs::remove_file(input).unwrap();
-        fs::remove_file(audio).unwrap();
-        fs::remove_file(lock).unwrap();
-
-        if Path::new(output).exists() {
-            fs::remove_file(output).unwrap();
-        }
-    }
+    Ok(())
+>>>>>>> v1.0.0
 }

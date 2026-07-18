@@ -23,7 +23,7 @@ pub fn read_lock_file<P: AsRef<Path>>(
 
     let mut file = File::open(path)?;
 
-    // Verify file signatures
+    // Verify file signatures:
 
     // FIRST CHECK: Verify PhaseLock magic bytes
     let mut magic = [0u8; 8];

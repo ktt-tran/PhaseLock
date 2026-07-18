@@ -1,7 +1,12 @@
 use std::path::PathBuf;
+use std::sync::mpsc::Sender;
 use egui::Ui;
 use rfd::FileDialog;
-use crate::crypto::encrypt::encrypt_with_key;
+use crate::worker::encrypt_worker::start_encrypt;
+<<<<<<< HEAD
+=======
+use crate::utils::file_size::{format_size, total_size, GB};
+>>>>>>> v1.0.0
 
 
 #[derive(Default)]
@@ -19,10 +24,15 @@ pub struct EncryptState {
 
 }
 
-
 pub fn show(
     state: &mut EncryptState,
     status_message: &mut String,
+    encrypt_job: &mut Option<std::thread::JoinHandle<std::io::Result<()>>>,
+    encryption_running: &mut bool,
+<<<<<<< HEAD
+=======
+    status_sender: &Sender<String>,
+>>>>>>> v1.0.0
     ui: &mut Ui
 ){
 
@@ -75,6 +85,24 @@ pub fn show(
                 ui.label(format!("• {}", path.file_name().unwrap_or_default().to_string_lossy()));
             }
         });
+
+        let total_bytes: u64 = state
+            .selected_items
+            .iter()
+            .map(|path| total_size(path))
+            .sum();
+
+        if total_bytes > GB as u64 {
+            ui.label(format!(
+                "Total size: {} (Larger data can be slow to encrypt)",
+                format_size(total_bytes)
+            ));
+        } else {
+            ui.label(format!(
+                "Total size: {}",
+                format_size(total_bytes)
+            ));
+        }
     }
 
     ui.add_space(20.0);
@@ -142,7 +170,6 @@ pub fn show(
     if ui.button("🔒 Encrypt").clicked(){
         if state.selected_items.is_empty() || state.selected_audio.is_none() {
             *status_message = "Please select both a file or folder and an audio key.".to_string();
-            println!("Please select both a file or folder and an audio key.");
         } else {
             state.confirm_action = true;
         }
@@ -198,96 +225,59 @@ pub fn show(
 
                 }
 
-                // Update status bar to indicate the encryption is in progress.
-                if ui.button("Encrypt").clicked() && state.output_directory.is_some() {
-                    *status_message = "Encrypting...".to_string();
-                    println!("Encrypting...");
+                ui.add_enabled_ui(!*encryption_running, |ui| {
+                    // Update status bar to indicate the encryption is in progress.
+                    if ui.button("Encrypt").clicked() && state.output_directory.is_some() {
+<<<<<<< HEAD
+                        *status_message = "Encrypting...".to_string();
+                        *encryption_running = true;
+                        println!("Encrypting...");
 
-                    let (Some(audio_path), Some(output_directory)) = (&state.selected_audio, &state.output_directory)
-                        else { println!("Missing file detected; Second check."); return () };
-            
-                    let output_name = if state.output_name.trim().is_empty() {
-                        "MyEncrypted"
-                    } else {
-                        state.output_name.trim()
-                    };
+                        let (Some(audio_path), Some(output_directory)) = (&state.selected_audio, &state.output_directory)
+                            else { println!("Missing file detected; Second check."); return () };
+=======
+                        *encryption_running = true;
 
-                    let output_path = output_directory.join(output_name).with_extension("lock");
+                        let (Some(audio_path), Some(output_directory)) = (&state.selected_audio, &state.output_directory)
+                            else { return; };
+>>>>>>> v1.0.0
+                
+                        let output_name = if state.output_name.trim().is_empty() {
+                            "MyEncrypted"
+                        } else {
+                            state.output_name.trim()
+                        };
 
-                    let password = if state.use_password && !state.password.trim().is_empty()
-                    {
-                        Some(state.password.as_str())
-                    } else {
-                        None
-                    };
+                        let output_path = output_directory.join(output_name).with_extension("lock");
 
-                    let result = encrypt_with_key(
-                        &state.selected_items,
-                        audio_path,
-                        &output_path,
-                        password,
-                    );
+                        let password = if state.use_password && !state.password.trim().is_empty()
+                        {
+                            Some(state.password.clone())
+                        } else {
+                            None
+                        };
 
-                    match result {
-                        Ok(()) => {
-                            *status_message = format!(
-                                "Encryption Successful: {}",
-                                output_directory.display()
-                            );
+                        // Starting a new thread need to transfer ownership.
+                        *encrypt_job = Some(start_encrypt(
+                            state.selected_items.clone(),
+                            audio_path.clone(),
+                            output_path.clone(),
+                            password,
+                            state.delete_original,
+<<<<<<< HEAD
+=======
+                            status_sender.clone(),
+>>>>>>> v1.0.0
+                        ));
 
-                            println!(
-                                "Encryption Successful: {}",
-                                output_directory.display()
-                            );
-
-                            if state.delete_original {
-                                let mut delete_errors = Vec::new();
-
-                                // Attempts to delete all uploaded file after encrypting them.
-                                for item in &state.selected_items {
-                                    let result = if item.is_file() {
-                                        std::fs::remove_file(item)
-                                    } else if item.is_dir() {
-                                        std::fs::remove_dir_all(item)
-                                    } else {
-                                        continue;
-                                    };
-
-                                    if let Err(e) = result {
-                                        delete_errors.push(format!(
-                                            "{}: {}",
-                                            item.display(),
-                                            e
-                                        ));
-                                    }
-                                }
-
-                                if delete_errors.is_empty() {
-                                    *status_message =
-                                        "Original files deleted successfully".to_string();
-                                } else {
-                                    *status_message = format!(
-                                        "Some files could not be deleted:\n{}",
-                                        delete_errors.join("\n")
-                                    );
-                                }
-                            }
-                        }
-
-                        Err(error) => {
-                            *status_message = format!("Encryption Failed: {error}");
-                            println!("Encryption Failed: {error}");
-                        }
+                        state.password.clear();
+                        state.password.shrink_to_fit();
+                        state.selected_items = vec![];
+                        state.selected_audio = None;
+                        state.output_directory = None;
+                        state.confirm_action = false;
                     }
-
-                    state.password.clear();
-                    state.password.shrink_to_fit();
-
-                    state.selected_items = vec![];
-                    state.selected_audio = None;
-                    state.output_directory = None;
-                    state.confirm_action = false;
-                }
+                });
             });
         });
     }
