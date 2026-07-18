@@ -4,10 +4,7 @@ use egui::Ui;
 use rfd::FileDialog;
 use crate::worker::decrypt_worker::start_audio_decrypt;
 use crate::worker::decrypt_worker::start_password_decrypt;
-<<<<<<< HEAD
-=======
 use crate::utils::file_size::{format_size, total_size};
->>>>>>> v1.0.0
 
 #[derive(Default)]
 pub struct DecryptState {
@@ -27,10 +24,7 @@ pub fn show(
     status_message: &mut String,
     decrypt_job: &mut Option<std::thread::JoinHandle<std::io::Result<()>>>,
     decryption_running: &mut bool,
-<<<<<<< HEAD
-=======
     status_sender: &Sender<String>,
->>>>>>> v1.0.0
     ui: &mut Ui
 ) {
 
@@ -133,10 +127,6 @@ pub fn show(
             state.confirm_action = true;
         } else {
             *status_message = "Please select both a file and a unlocking method.".to_string();
-<<<<<<< HEAD
-            println!("Please select both a file and an unlocking method.");
-=======
->>>>>>> v1.0.0
         }
     }
 
@@ -183,18 +173,10 @@ pub fn show(
 
                 ui.add_enabled_ui(!*decryption_running, |ui| {
                     if ui.button("Unlock").clicked() && state.output_directory != None {
-<<<<<<< HEAD
-                        *status_message = "Unlocking...".to_string();
-                        *decryption_running = true;
-                        println!("Unlocking...");
-
-                        let (Some(lock_file), Some(_output_directory)) = (&state.selected_lock, &state.output_directory) else { println!("Missing file detected; Second check."); return () };
-=======
                         *decryption_running = true;
 
                         let (Some(lock_file), Some(_output_directory)) = (&state.selected_lock, &state.output_directory)
                             else { return; };
->>>>>>> v1.0.0
 
                         let mut output_path = _output_directory.clone();
 
@@ -208,10 +190,7 @@ pub fn show(
                                 lock_file.clone(),
                                 audio_path.clone(),
                                 output_path.clone(),
-<<<<<<< HEAD
-=======
                                 status_sender.clone(),
->>>>>>> v1.0.0
                             ));
                         
                         } else if !state.password.trim().is_empty() {
@@ -220,10 +199,7 @@ pub fn show(
                                 lock_file.clone(),
                                 state.password.clone(),
                                 output_path.clone(),
-<<<<<<< HEAD
-=======
                                 status_sender.clone(),
->>>>>>> v1.0.0
                             ));
 
                         }

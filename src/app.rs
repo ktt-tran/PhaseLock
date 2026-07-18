@@ -31,17 +31,12 @@ pub struct PhaseLockApp {
     pub status_message: String,
     pub encrypt_job: Option<std::thread::JoinHandle<std::io::Result<()>>>,
     pub decrypt_job: Option<std::thread::JoinHandle<std::io::Result<()>>>,
-<<<<<<< HEAD
-    pub encryption_running: bool,
-    pub decryption_running: bool,
-=======
     pub viewer_job: Option<std::thread::JoinHandle<std::io::Result<Vec<u8>>>>,
     pub encryption_running: bool,
     pub decryption_running: bool,
     pub viewer_running: bool,
     pub status_sender: Sender<String>,
     pub status_receiver: Receiver<String>,
->>>>>>> v1.0.0
 
 }
 
@@ -59,29 +54,18 @@ impl PhaseLockApp {
         Self {
 
             current_page: Page::Home,
-<<<<<<< HEAD
-
             status_message:"Ready".to_string(),
-
-=======
-            status_message:"Ready".to_string(),
->>>>>>> v1.0.0
             encrypt_state:gui::encrypt::EncryptState::default(),
             decrypt_state:gui::unlock::DecryptState::default(),
             viewer_state:gui::viewer::ViewerState::default(),
             encrypt_job: None,
             decrypt_job: None,
-<<<<<<< HEAD
-            encryption_running:false,
-            decryption_running:false,
-=======
             viewer_job: None,
             encryption_running:false,
             decryption_running:false,
             viewer_running:false,
             status_sender,
             status_receiver,
->>>>>>> v1.0.0
 
         }
     }
@@ -96,14 +80,11 @@ impl eframe::App for PhaseLockApp {
         _frame:&mut eframe::Frame
     ){
 
-<<<<<<< HEAD
-=======
         // Update status bar on progress.
         while let Ok(message) = self.status_receiver.try_recv() {
             self.status_message = message;
         }
 
->>>>>>> v1.0.0
         // Poll encryption job.
         if self.encryption_running {
             if let Some(job) = &self.encrypt_job {
@@ -114,18 +95,10 @@ impl eframe::App for PhaseLockApp {
                     match job.join().unwrap() {
                         Ok(()) => {
                             self.status_message = "Encryption Successful!".to_string();
-<<<<<<< HEAD
-                            println!("Encryption Successful!");
-=======
->>>>>>> v1.0.0
                         }
 
                         Err(error) => {
                             self.status_message = format!("Encryption Failed: {}", error);
-<<<<<<< HEAD
-                            println!("Encryption Failed: {}", error);
-=======
->>>>>>> v1.0.0
                         }
                     }
 
@@ -144,18 +117,10 @@ impl eframe::App for PhaseLockApp {
                     match job.join().unwrap() {
                         Ok(()) => {
                             self.status_message = "Unlock Successful!".to_string();
-<<<<<<< HEAD
-                            println!("Unlock Successful!");
-=======
->>>>>>> v1.0.0
                         }
 
                         Err(error) => {
                             self.status_message = format!("Unlock Failed: {}", error);
-<<<<<<< HEAD
-                            println!("Unlock Failed: {}", error);
-=======
->>>>>>> v1.0.0
                         }
                     }
 
@@ -164,8 +129,6 @@ impl eframe::App for PhaseLockApp {
             }
         }
 
-<<<<<<< HEAD
-=======
         if self.viewer_running {
             if let Some(job) = self.viewer_job.take() {
                 if job.is_finished() {
@@ -207,7 +170,6 @@ impl eframe::App for PhaseLockApp {
             }
         }
 
->>>>>>> v1.0.0
         egui::SidePanel::left("sidebar")
         .show(ctx, |ui|{
 
@@ -250,10 +212,7 @@ impl eframe::App for PhaseLockApp {
                         &mut self.status_message,
                         &mut self.encrypt_job,
                         &mut self.encryption_running,
-<<<<<<< HEAD
-=======
                         &self.status_sender,
->>>>>>> v1.0.0
                         ui
                     ),
 
@@ -263,10 +222,7 @@ impl eframe::App for PhaseLockApp {
                         &mut self.status_message,
                         &mut self.decrypt_job,
                         &mut self.decryption_running,
-<<<<<<< HEAD
-=======
                         &self.status_sender,
->>>>>>> v1.0.0
                         ui
                     ),
 
