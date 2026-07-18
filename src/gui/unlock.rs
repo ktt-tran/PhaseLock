@@ -33,7 +33,7 @@ pub fn show(
     ui.separator();
 
     // Select .lock file
-    ui.label("Encrypted File:");
+    ui.label("Encrypted File");
 
     if ui.button("Select .lock File").clicked(){
 
@@ -74,10 +74,10 @@ pub fn show(
     ui.heading("Encryption Key");
 
     ui.label(
-        "Upload the key used during encryption:"
+        "Provide the key used during encryption"
     );
 
-    if ui.button("Select Audio").clicked(){
+    if ui.button("Select Audio File").clicked(){
 
         if let Some(path)=
             FileDialog::new()
@@ -111,7 +111,7 @@ pub fn show(
     ui.heading("Password");
 
     ui.label(
-        "Enter password if one was added:"
+        "Use password instead (if one was added):"
     );
 
     crate::gui::components::password_input(

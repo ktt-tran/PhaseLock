@@ -21,6 +21,17 @@ PhaseLock supports encrypting individual files, multiple files, or entire folder
 
 ---
 
+
+## Start PhaseLock
+
+```bash
+cd src
+cargo build
+cargo run
+```
+
+---
+
 ## Features
 
 ### Desktop Application

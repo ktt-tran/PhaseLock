@@ -58,7 +58,7 @@ pub fn show(
             }
         }
 
-        if ui.button("Clear Selection").clicked() {
+        if ui.button("Clear").clicked() {
             state.selected_items.clear();
         }
     });
@@ -107,7 +107,7 @@ pub fn show(
         "Audio File"
     );
 
-    if ui.button("Select Audio").clicked(){
+    if ui.button("Select Audio File").clicked(){
 
         if let Some(path)=
             FileDialog::new()

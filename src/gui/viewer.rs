@@ -44,7 +44,7 @@ pub fn show(
     ui.separator();
 
     // Select .lock file
-    ui.label("View Readable Files Without Extracting:");
+    ui.label("View File Without Extracting");
 
     if ui.button("Select .lock File").clicked() {
 
@@ -58,11 +58,11 @@ pub fn show(
     }
 
     ui.label(format!(
-        "Selected: {}",
+        "File: {}",
         state.selected_lock
             .as_ref()
             .map(|p| p.display().to_string())
-            .unwrap_or_else(|| "None".to_string())
+            .unwrap_or_else(|| "None selected".to_string())
     ));
 
     ui.add_space(20.0);
@@ -71,7 +71,7 @@ pub fn show(
     ui.heading("Encryption Key");
 
     ui.label(
-        "Provide the key used during encryption:"
+        "Provide the key used during encryption"
     );
 
     if ui.button("Select Audio File").clicked() {
@@ -85,7 +85,7 @@ pub fn show(
     }
 
     ui.label(format!(
-        "Key: {}",
+        "Audio: {}",
         state.selected_audio
             .as_ref()
             .map(|path| path.display().to_string())
@@ -98,7 +98,7 @@ pub fn show(
     ui.heading("Password");
 
     ui.label(
-        "Enter password if required:"
+        "Use password instead (if one was added):"
     );
 
     crate::gui::components::password_input(
@@ -254,7 +254,7 @@ pub fn show(
 
     ui.separator();
 
-    ui.heading("Files");
+    ui.heading("Available");
 
     let files = state.file_list.clone();
     let temp_dir = env::temp_dir();
