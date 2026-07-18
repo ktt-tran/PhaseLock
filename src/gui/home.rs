@@ -20,7 +20,7 @@ pub fn show(ui:&mut Ui){
         ui.add_space(10.0);
 
         ui.label(
-            "Protect files using audio keys and optional passwords."
+            "Protect files using an audio key and optional password."
         );
 
     });
