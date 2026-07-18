@@ -3,10 +3,7 @@ use std::sync::mpsc::Sender;
 use egui::Ui;
 use rfd::FileDialog;
 use crate::worker::encrypt_worker::start_encrypt;
-<<<<<<< HEAD
-=======
 use crate::utils::file_size::{format_size, total_size, GB};
->>>>>>> v1.0.0
 
 
 #[derive(Default)]
@@ -29,10 +26,7 @@ pub fn show(
     status_message: &mut String,
     encrypt_job: &mut Option<std::thread::JoinHandle<std::io::Result<()>>>,
     encryption_running: &mut bool,
-<<<<<<< HEAD
-=======
     status_sender: &Sender<String>,
->>>>>>> v1.0.0
     ui: &mut Ui
 ){
 
@@ -228,19 +222,10 @@ pub fn show(
                 ui.add_enabled_ui(!*encryption_running, |ui| {
                     // Update status bar to indicate the encryption is in progress.
                     if ui.button("Encrypt").clicked() && state.output_directory.is_some() {
-<<<<<<< HEAD
-                        *status_message = "Encrypting...".to_string();
-                        *encryption_running = true;
-                        println!("Encrypting...");
-
-                        let (Some(audio_path), Some(output_directory)) = (&state.selected_audio, &state.output_directory)
-                            else { println!("Missing file detected; Second check."); return () };
-=======
                         *encryption_running = true;
 
                         let (Some(audio_path), Some(output_directory)) = (&state.selected_audio, &state.output_directory)
                             else { return; };
->>>>>>> v1.0.0
                 
                         let output_name = if state.output_name.trim().is_empty() {
                             "MyEncrypted"
@@ -264,10 +249,7 @@ pub fn show(
                             output_path.clone(),
                             password,
                             state.delete_original,
-<<<<<<< HEAD
-=======
                             status_sender.clone(),
->>>>>>> v1.0.0
                         ));
 
                         state.password.clear();

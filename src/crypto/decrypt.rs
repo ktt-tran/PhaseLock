@@ -220,8 +220,6 @@ pub fn decrypt_and_extract_with_audio<L: AsRef<Path>, A: AsRef<Path>, O: AsRef<P
     )?;
 
     Ok(())
-<<<<<<< HEAD
-=======
 }
 
 // Extract all data and restore into the output directory.
@@ -244,5 +242,4 @@ pub fn decrypt_and_extract_with_password<L: AsRef<Path>, O: AsRef<Path>>(
     )?;
 
     Ok(())
->>>>>>> v1.0.0
 }

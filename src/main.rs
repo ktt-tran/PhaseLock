@@ -4,10 +4,7 @@ mod audio;
 mod crypto;
 mod file;
 mod worker;
-<<<<<<< HEAD
-=======
 mod utils;
->>>>>>> v1.0.0
 
 
 fn main() -> eframe::Result<()> {

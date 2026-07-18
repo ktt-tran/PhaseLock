@@ -1,10 +1,7 @@
 use std::{
     path::PathBuf,
     thread::{self, JoinHandle},
-<<<<<<< HEAD
-=======
     sync::mpsc::Sender,
->>>>>>> v1.0.0
 };
 
 use crate::crypto::encrypt::encrypt_with_key;
@@ -16,10 +13,7 @@ pub fn start_encrypt(
     output_path: PathBuf,
     password: Option<String>,
     delete_original: bool,
-<<<<<<< HEAD
-=======
     status_sender: Sender<String>,
->>>>>>> v1.0.0
 ) -> JoinHandle<std::io::Result<()>> {
 
     thread::spawn(move || {
@@ -29,10 +23,7 @@ pub fn start_encrypt(
             &audio_path,
             &output_path,
             password.as_deref(),
-<<<<<<< HEAD
-=======
             &status_sender,
->>>>>>> v1.0.0
         )?;
 
         if delete_original {
