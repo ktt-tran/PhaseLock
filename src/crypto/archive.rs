@@ -232,7 +232,168 @@ pub fn extract_archive(
     Ok(())
 }
 
+pub fn list_archive_files(
+    archive: &[u8]
+) -> io::Result<Vec<String>> {
 
+    let mut cursor = 0usize;
+
+    let file_count = read_u64(
+        archive,
+        &mut cursor
+    )?;
+
+    let mut files = Vec::new();
+
+    for _ in 0..file_count {
+
+        let name_len = read_u64(
+            archive,
+            &mut cursor
+        )? as usize;
+
+        let name_bytes =
+            archive
+                .get(cursor..cursor + name_len)
+                .ok_or(
+                    io::Error::new(
+                        io::ErrorKind::UnexpectedEof,
+                        "invalid archive"
+                    )
+                )?;
+
+
+        cursor += name_len;
+
+        let name =
+            String::from_utf8(
+                name_bytes.to_vec()
+            )
+            .map_err(|_| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "invalid filename"
+                )
+            })?;
+
+        let file_size = read_u64(
+            archive,
+            &mut cursor
+        )?;
+
+        // skip file contents
+        cursor += file_size as usize;
+
+        if cursor > archive.len() {
+            return Err(
+                io::Error::new(
+                    io::ErrorKind::UnexpectedEof,
+                    "invalid archive"
+                )
+            );
+        }
+
+        if cursor > archive.len() {
+            return Err(
+                io::Error::new(
+                    io::ErrorKind::UnexpectedEof,
+                    "invalid archive"
+                )
+            );
+        }
+
+        files.push(name);
+    }
+
+
+    Ok(files)
+}
+
+pub fn read_file_from_archive(
+    archive: &[u8],
+    target: &str
+) -> io::Result<Vec<u8>> {
+
+    let mut cursor = 0usize;
+
+    let file_count = read_u64(
+        archive,
+        &mut cursor
+    )?;
+
+
+    for _ in 0..file_count {
+
+        let name_len = read_u64(
+            archive,
+            &mut cursor
+        )? as usize;
+
+        let name_bytes =
+            archive
+                .get(cursor..cursor + name_len)
+                .ok_or(
+                    io::Error::new(
+                        io::ErrorKind::UnexpectedEof,
+                        "invalid archive"
+                    )
+                )?;
+
+
+        cursor += name_len;
+
+        let name =
+            String::from_utf8(
+                name_bytes.to_vec()
+            )
+            .map_err(|_| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "invalid filename"
+                )
+            })?;
+
+        let file_size = read_u64(
+            archive,
+            &mut cursor
+        )? as usize;
+
+        if name == target {
+
+            let data =
+                archive
+                    .get(cursor..cursor + file_size)
+                    .ok_or(
+                        io::Error::new(
+                            io::ErrorKind::UnexpectedEof,
+                            "invalid archive"
+                        )
+                    )?;
+
+
+            return Ok(data.to_vec());
+        }
+
+        // skip this file
+        cursor += file_size;
+
+        if cursor > archive.len() {
+            return Err(
+                io::Error::new(
+                    io::ErrorKind::UnexpectedEof,
+                    "invalid archive"
+                )
+            );
+        }
+    }
+
+    Err(
+        io::Error::new(
+            io::ErrorKind::NotFound,
+            "file not found"
+        )
+    )
+}
 
 fn read_u64(
     data: &[u8],

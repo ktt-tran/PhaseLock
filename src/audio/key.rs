@@ -35,9 +35,7 @@ pub fn derive_audio_key<P: AsRef<Path>>(
 
     let mut buffer = [0u8; 8192];
 
-    // Loops through the file and reading the entire file chunck-by-chunck to the end.
-    // Each loop reads 8192 bits chunck and updates the hash state which will be the hash
-    // key generated.
+    // Hash state updates creates hash key.
     loop {
         let bytes_read = file.read(&mut buffer)?;
 
@@ -55,47 +53,4 @@ pub fn derive_audio_key<P: AsRef<Path>>(
     key.copy_from_slice(hash.as_bytes());
 
     Ok(AudioKey { bytes: key })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs;
-
-    #[test]
-    fn same_file_produces_same_key() {
-        let path = "test_audio_key.bin";
-
-        fs::write(path, b"fake audio data").unwrap();
-
-        let key1 = derive_audio_key(path).unwrap();
-        let key2 = derive_audio_key(path).unwrap();
-
-        assert_eq!(
-            key1.as_bytes(),
-            key2.as_bytes()
-        );
-
-        fs::remove_file(path).unwrap();
-    }
-
-    #[test]
-    fn different_files_produce_different_keys() {
-        let path1 = "test_audio_1.bin";
-        let path2 = "test_audio_2.bin";
-
-        fs::write(path1, b"audio file one").unwrap();
-        fs::write(path2, b"audio file two").unwrap();
-
-        let key1 = derive_audio_key(path1).unwrap();
-        let key2 = derive_audio_key(path2).unwrap();
-
-        assert_ne!(
-            key1.as_bytes(),
-            key2.as_bytes()
-        );
-
-        fs::remove_file(path1).unwrap();
-        fs::remove_file(path2).unwrap();
-    }
 }

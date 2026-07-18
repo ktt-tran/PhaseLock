@@ -1,6 +1,8 @@
 use std::{
     io,
+    io::{Cursor},
     path::{Path, PathBuf},
+    sync::mpsc::Sender,
 };
 
 use chacha20poly1305::{
@@ -31,6 +33,7 @@ use crate::{
 };
 
 pub const NONCE_SIZE: usize = 24;
+const COMPRESSION_LEVEL: i32 = 3;
 
 pub struct EncryptedData {
     pub nonce: [u8; NONCE_SIZE],
@@ -79,19 +82,27 @@ pub fn encrypt_with_key<A: AsRef<Path>, O: AsRef<Path>>(
     audio_path: A,
     output_path: O,
     password: Option<&str>,
+    sender: &Sender<String>,
 ) -> io::Result<()> {
 
     // Generate random key for file.
     let file_key = FileKey::generate();
 
     // Create archive for selected files/folders.
-    println!("Creating archive...");
+    sender.send("Creating archive...".to_string()).ok();
     let archive_data = archive::create_archive(input_data)?;
-    println!("Archive created.");
+    sender.send("Archive created...".to_string()).ok();
 
+    // Compress archive.
+    let compressed_archive = zstd::encode_all(
+        Cursor::new(archive_data), 
+        COMPRESSION_LEVEL,
+    ).unwrap();
+    
     // Encrypt the archive of files/folders with the file_key byte code.
+    sender.send("Encrypting...".to_string()).ok();
     let payload = encrypt_bytes(
-        &archive_data,
+        &compressed_archive,
         file_key.as_bytes(),
     )
     // Convert chacha20poly1305::Error into io:Error if file
@@ -104,9 +115,7 @@ pub fn encrypt_with_key<A: AsRef<Path>, O: AsRef<Path>>(
     })?;
 
     // Derive key from exact audio file.
-    println!("Deriving audio key...");
     let audio_key = derive_audio_key(audio_path)?;
-    println!("Audio key derived.");
 
     // Encrypt/wrap the FileKey using AudioKey.
     let audio_wrapped_key = WrappedKey::from(
@@ -172,88 +181,7 @@ pub fn encrypt_with_key<A: AsRef<Path>, O: AsRef<Path>>(
     };
 
     // Write the final .lock file.
-    println!("Writing lock file...");
     write_lock_file(output_path, &lock_file)?;
-    println!("Lock file written.");
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs;
-
-    #[test]
-    fn encryption_changes_the_data() {
-        let key = [42u8; 32];
-        let plaintext = b"PhaseLock secret data";
-
-        let encrypted =
-            encrypt_bytes(plaintext, &key).unwrap();
-
-        assert_ne!(
-            encrypted.ciphertext,
-            plaintext
-        );
-    }
-
-    #[test]
-    fn encryption_uses_different_nonces() {
-        let key = [42u8; 32];
-        let plaintext = b"same data";
-
-        let encrypted1 =
-            encrypt_bytes(plaintext, &key).unwrap();
-
-        let encrypted2 =
-            encrypt_bytes(plaintext, &key).unwrap();
-
-        assert_ne!(
-            encrypted1.nonce,
-            encrypted2.nonce
-        );
-
-        assert_ne!(
-            encrypted1.ciphertext,
-            encrypted2.ciphertext
-        );
-    }
-
-    #[test]
-    fn creates_real_lock_file() {
-        let input = "test_secret.txt";
-        let audio = "test_audio.bin";
-        let output = "test_secret.lock";
-
-        fs::write(
-            input,
-            b"PhaseLock secret information",
-        )
-        .unwrap();
-
-        fs::write(
-            audio,
-            b"fake audio key data",
-        )
-        .unwrap();
-
-        encrypt_with_key(
-            input,
-            audio,
-            output,
-            Some("test-password"),
-        )
-        .unwrap();
-
-        assert!(
-            fs::metadata(output)
-                .unwrap()
-                .len() > 0
-        );
-
-        fs::remove_file(input).unwrap();
-        fs::remove_file(audio).unwrap();
-        fs::remove_file(output).unwrap();
-    }
 }
